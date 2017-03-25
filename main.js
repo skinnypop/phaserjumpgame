@@ -4,6 +4,7 @@ var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create
 function preload(){ 
         game.load.image('ground', 'assets/PNG/Environment/ground_grass.png');
         game.load.image('bunny', 'assets/PNG/Players/bunny1_ready.png');
+        game.load.atlasXML('mysprite', 'assets/Spritesheets/spritesheet_jumper.png', 'assets/spritesheet.xml');
     }
 
 var platforms;
@@ -11,12 +12,14 @@ var player;
 var cursors;
 var score = 0;
 var scoreText;
+var playerJumping;
 
 
 
 function create() { 
         game.stage.backgroundColor = '479cde';
         game.physics.startSystem(Phaser.Physics.ARCADE);
+        game.physics.setBoundsToWorld();
         
         platforms = game.add.group();
         
@@ -49,12 +52,14 @@ function create() {
         
         //  We need to enable physics on the player
         game.physics.arcade.enable(player);
-        game.camera.follow(player);
+        game.camera.follow(player);  //Is this working?
         
         //  Player physics properties. Give the little guy a slight bounce.
         player.body.bounce.y = 0.2;
         player.body.gravity.y = 300;
         player.body.collideWorldBounds = true;
+
+        playerJumping = false;
         
         //  The score
         scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
@@ -69,6 +74,13 @@ function update() {
         
     //  Collide the player with the platforms
     var hitPlatform = game.physics.arcade.collide(player, platforms);
+
+    //Check to see if player missed a platform
+    if (player.y > game.height){
+		player.kill();
+        score -= 10; //  Add and update the score
+        scoreText.text = 'Score: ' + score;
+    }
         
     //  Reset the players velocity (movement)
     player.body.velocity.x = 0;
@@ -98,9 +110,22 @@ function update() {
     //  Allow the player to jump if they are touching the ground.
     if (cursors.up.isDown && player.body.touching.down){
         player.body.velocity.y = -350;
+        playerJumping = true;
     }
 
-    game.world.wrap(player, 0, true);
+    if (playerJumping){
+        playerJumping = false;
+        platforms.forEach(function(item) {
+			item.body.velocity.y = 350;			
+		});
+    } else {
+        platforms.forEach(function(item) {
+			item.body.velocity.y = 0;			
+		});
+    }
+
+
+    game.debug.spriteInfo(player, 20, 32);
   
 }
 
